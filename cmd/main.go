@@ -1,6 +1,9 @@
-package cmd
+package main
 
 import (
+	"context"
+	"godmin/config"
+	"godmin/internal/server"
 	"log"
 )
 
@@ -10,9 +13,10 @@ func main() {
 	}
 }
 
-func run() (err error) {
-	// TODO
-	//ctx := context.Background()
+func init() {
+	config.Bootstrap()
+}
 
-	return err
+func run() (err error) {
+	return server.Run(context.Background(), config.NewConfig())
 }

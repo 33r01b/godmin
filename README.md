@@ -3,7 +3,7 @@
 ### TODO
 
 - api (RestApi, gRPC)
-- Auth
+- Auth (JWT)
 - CRUD
   - models
   - filters
