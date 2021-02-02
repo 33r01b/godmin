@@ -3,11 +3,11 @@ version: '3'
 services:
   postgres: &postgres
     image: postgres:12.1
-    container_name: godamin_db_dev
+    container_name: godmin_db_dev
     restart: always
     environment:
-      - POSTGRES_DB=godamin_db_dev
-      - POSTGRES_USER=godamin
+      - POSTGRES_DB=godmin_db_dev
+      - POSTGRES_USER=godmin
       - POSTGRES_PASSWORD=password
     volumes:
       - ./docker/postgres/init/:/docker-entrypoint-init.d/
@@ -15,10 +15,10 @@ services:
     ports:
       - 5432:5432
   postgres_test:
-    container_name: godamin_db_test
+    container_name: godmin_db_test
     environment:
-      - POSTGRES_DB=godamin_db_test
-      - POSTGRES_USER=godamin
+      - POSTGRES_DB=godmin_db_test
+      - POSTGRES_USER=godmin
       - POSTGRES_PASSWORD=password
     volumes:
       - ./docker/postgres/init/:/docker-entrypoint-init.d/

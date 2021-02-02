@@ -17,6 +17,7 @@ func init() {
 	config.Bootstrap()
 }
 
-func run() (err error) {
-	return server.Run(context.Background(), config.NewConfig())
+func run() error {
+	ctx := context.TODO()
+	return server.Run(ctx, config.NewConfig())
 }
