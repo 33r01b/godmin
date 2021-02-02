@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"strconv"
 	"time"
@@ -9,14 +9,19 @@ import (
 
 type Config struct {
 	BindAddr string
-	LogLevel string
+	LogLevel log.Level
 	Database Database
 }
 
 func NewConfig() *Config {
+	logLevel, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
+	if err != nil {
+		log.Fatal("Incorrect log level")
+	}
+
 	return &Config{
 		BindAddr: os.Getenv("BIND_ADDR"),
-		LogLevel: os.Getenv("LOG_LEVEL"),
+		LogLevel: logLevel,
 		Database: newDatabase(),
 	}
 }

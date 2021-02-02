@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"godmin/config"
 	"godmin/internal/server"
-	"log"
 )
 
 func main() {
