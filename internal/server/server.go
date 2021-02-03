@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"godmin/config"
@@ -22,8 +21,8 @@ func Run(context context.Context, config *config.Config) error {
 	return http.ListenAndServe(config.BindAddr, newServer(store.New(db)))
 }
 
-func newServer(store *store.Store) *server {
-	s := &server{
+func newServer(store *store.Store) *Server {
+	s := &Server{
 		router: mux.NewRouter(),
 		store:  store,
 	}
@@ -33,25 +32,11 @@ func newServer(store *store.Store) *server {
 	return s
 }
 
-type server struct {
+type Server struct {
 	router *mux.Router
 	store  *store.Store
 }
 
-func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
-}
-
-func (s *server) respond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(code)
-	if data != nil {
-		if err := json.NewEncoder(w).Encode(data); err != nil {
-			s.error(w, r, http.StatusInternalServerError, err)
-		}
-	}
-}
-
-func (s *server) error(w http.ResponseWriter, r *http.Request, code int, err error) {
-	s.respond(w, r, code, map[string]string{"error": err.Error()})
 }

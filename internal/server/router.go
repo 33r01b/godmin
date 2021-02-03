@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"godmin/internal/controller"
 	"net/http"
 	"time"
 )
@@ -15,17 +16,14 @@ const (
 
 type ctxKey int8
 
-func (s *server) configureRouter() {
+func (s *Server) configureRouter() {
 	s.router.Use(setRequestID)
 	s.router.Use(logRequest)
 	// TODO
-	s.router.HandleFunc("/", s.handleMain()).Methods(http.MethodGet)
-}
+	responseHandler := controller.NewResponse()
+	mainController := controller.NewMainController(responseHandler)
 
-func (s *server) handleMain() func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		s.respond(w, r, http.StatusOK, "hello")
-	}
+	s.router.HandleFunc("/", mainController.Handle()).Methods(http.MethodGet)
 }
 
 func setRequestID(next http.Handler) http.Handler {
