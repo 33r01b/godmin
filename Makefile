@@ -25,13 +25,13 @@ migrate= \
 		$(2)
 
 migrate_up:
-		$(call migrate,godamin_db_dev,up)
+		$(call migrate,godmin_db_dev,up)
 
 migrate_down:
-		$(call migrate,godamin_db_dev,down)
+		$(call migrate,godmin_db_dev,down)
 
 migrate_test_up:
-		$(call migrate,godamin_db_test,up)
+		$(call migrate,godmin_db_test,up)
 
 migrate_test_down:
-		$(call migrate,godamin_db_test,down)
+		$(call migrate,godmin_db_test,down)

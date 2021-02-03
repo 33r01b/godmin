@@ -20,11 +20,17 @@ type ctxKey int8
 func (s *Server) configureRouter() {
 	s.router.Use(setRequestID)
 	s.router.Use(logRequest)
-	// TODO
+
 	responseHandler := response.NewResponse()
 
+	// main
 	mainController := controller.NewMainController(responseHandler)
 	s.router.HandleFunc("/", mainController.Handle()).Methods(http.MethodGet)
+
+	// users
+	userController := controller.NewUserController(responseHandler, s.store)
+	user := s.router.PathPrefix("/users").Subrouter()
+	user.HandleFunc("/", userController.UserCreateHandle()).Methods(http.MethodPost)
 }
 
 func setRequestID(next http.Handler) http.Handler {
