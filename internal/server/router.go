@@ -4,7 +4,8 @@ import (
 	"context"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-	"godmin/internal/controller"
+	"godmin/internal/server/controller"
+	"godmin/internal/server/response"
 	"net/http"
 	"time"
 )
@@ -20,9 +21,9 @@ func (s *Server) configureRouter() {
 	s.router.Use(setRequestID)
 	s.router.Use(logRequest)
 	// TODO
-	responseHandler := controller.NewResponse()
-	mainController := controller.NewMainController(responseHandler)
+	responseHandler := response.NewResponse()
 
+	mainController := controller.NewMainController(responseHandler)
 	s.router.HandleFunc("/", mainController.Handle()).Methods(http.MethodGet)
 }
 
@@ -43,13 +44,13 @@ func logRequest(next http.Handler) http.Handler {
 		logger.Infof("started %s %s", r.Method, r.RequestURI)
 
 		start := time.Now()
-		rw := &responseWriter{w, http.StatusOK}
+		rw := &response.Writer{ResponseWriter: w, Code: http.StatusOK}
 		next.ServeHTTP(rw, r)
 
 		logger.Infof(
 			"completed with %d %s in %v",
-			rw.code,
-			http.StatusText(rw.code),
+			rw.Code,
+			http.StatusText(rw.Code),
 			time.Now().Sub(start),
 		)
 	})

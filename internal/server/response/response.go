@@ -1,11 +1,11 @@
-package controller
+package response
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-type ResponseHandler interface {
+type Handler interface {
 	Respond(w http.ResponseWriter, r *http.Request, code int, data interface{})
 	Error(w http.ResponseWriter, r *http.Request, code int, err error)
 }
@@ -27,6 +27,16 @@ func (res *Response) Error(w http.ResponseWriter, r *http.Request, code int, err
 	res.Respond(w, r, code, map[string]string{"error": err.Error()})
 }
 
-func NewResponse() ResponseHandler {
+func NewResponse() Handler {
 	return &Response{}
+}
+
+type Writer struct {
+	http.ResponseWriter
+	Code int
+}
+
+func (w *Writer) WriteHeader(statusCode int) {
+	w.Code = statusCode
+	w.ResponseWriter.WriteHeader(statusCode)
 }

@@ -1,11 +1,12 @@
 package controller
 
 import (
+	"godmin/internal/server/response"
 	"net/http"
 )
 
 type MainController struct {
-	responseHandler ResponseHandler
+	responseHandler response.Handler
 }
 
 func (c *MainController) Handle() func(w http.ResponseWriter, r *http.Request) {
@@ -14,6 +15,6 @@ func (c *MainController) Handle() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func NewMainController(r ResponseHandler) *MainController {
+func NewMainController(r response.Handler) *MainController {
 	return &MainController{responseHandler: r}
 }
