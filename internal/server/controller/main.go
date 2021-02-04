@@ -11,7 +11,7 @@ type MainController struct {
 
 func (c *MainController) Handle() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		c.responseHandler.Respond(w, r, http.StatusOK, "hello")
+		c.responseHandler.Respond(w, r, http.StatusOK, "Godmin")
 	}
 }
 

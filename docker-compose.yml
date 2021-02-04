@@ -25,3 +25,14 @@ services:
     ports:
       - 7432:5432
     <<: *postgres
+  redis: &redis
+    image: redis:6.0.4
+    container_name: godmin_redis_dev
+    restart: always
+    ports:
+      - 6379:6379
+  redis_test:
+    container_name: godmin_redis_test
+    ports:
+      - 7379:6379
+    <<: *redis

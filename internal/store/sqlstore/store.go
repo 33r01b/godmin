@@ -1,8 +1,8 @@
-package store
+package sqlstore
 
 import (
 	"github.com/jmoiron/sqlx"
-	"godmin/internal/store/repository"
+	"godmin/internal/store/sqlstore/repository"
 )
 
 type Store struct {

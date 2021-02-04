@@ -10,7 +10,9 @@ import (
 type Config struct {
 	BindAddr string
 	LogLevel log.Level
-	Database Database
+	Database *Database
+	RedisUrl string
+	Jwt      *Jwt
 }
 
 func NewConfig() *Config {
@@ -23,6 +25,8 @@ func NewConfig() *Config {
 		BindAddr: os.Getenv("BIND_ADDR"),
 		LogLevel: logLevel,
 		Database: newDatabase(),
+		RedisUrl: os.Getenv("REDIS_URL"),
+		Jwt:      newJwt(),
 	}
 }
 
@@ -39,7 +43,7 @@ type Database struct {
 	ConnMaxIdleTime time.Duration
 }
 
-func newDatabase() Database {
+func newDatabase() *Database {
 	port, err := strconv.ParseInt(os.Getenv("DATABASE_PORT"), 10, 16)
 	if err != nil {
 		log.Fatal("Incorrect database port")
@@ -65,7 +69,7 @@ func newDatabase() Database {
 		log.Fatal("Incorrect database connection max idle time")
 	}
 
-	return Database{
+	return &Database{
 		Host:            os.Getenv("DATABASE_HOST"),
 		Port:            uint16(port),
 		Name:            os.Getenv("DATABASE_NAME"),
@@ -76,5 +80,17 @@ func newDatabase() Database {
 		MaxIdleConns:    int(maxIdleConns),
 		ConnMaxIdleTime: connMaxIdleTime,
 		ConnMaxLifeTime: connMaxLifeTime,
+	}
+}
+
+type Jwt struct {
+	AccessSecret  string
+	RefreshSecret string
+}
+
+func newJwt() *Jwt {
+	return &Jwt{
+		AccessSecret:  os.Getenv("JWT_ACCESS_SECRET"),
+		RefreshSecret: os.Getenv("JWT_REFRESH_SECRET"),
 	}
 }

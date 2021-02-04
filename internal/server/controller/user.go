@@ -5,13 +5,13 @@ import (
 	"godmin/internal/model"
 	"godmin/internal/server/request"
 	"godmin/internal/server/response"
-	"godmin/internal/store"
+	"godmin/internal/store/sqlstore"
 	"net/http"
 )
 
 type UserController struct {
 	responseHandler response.Handler
-	store           *store.Store
+	store           *sqlstore.Store
 }
 
 func (c *UserController) UserCreateHandle() func(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +40,6 @@ func (c *UserController) UserCreateHandle() func(w http.ResponseWriter, r *http.
 	}
 }
 
-func NewUserController(r response.Handler, s *store.Store) *UserController {
+func NewUserController(r response.Handler, s *sqlstore.Store) *UserController {
 	return &UserController{responseHandler: r, store: s}
 }

@@ -18,7 +18,6 @@ func (u *UserCreate) Validate() error {
 		validation.Field(&u.Name, validation.Required, validation.Length(2, 100)),
 		validation.Field(
 			&u.Password,
-			// TODO validation.By(repository.User.ExistsEmail()),
 			validation.Length(6, 100),
 		),
 	)
