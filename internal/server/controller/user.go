@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"godmin/internal/model"
+	"godmin/internal/server"
 	"godmin/internal/server/request"
 	"godmin/internal/server/response"
 	"godmin/internal/store/sqlstore"
@@ -36,7 +37,13 @@ func (c *UserController) UserCreateHandle() func(w http.ResponseWriter, r *http.
 			c.responseHandler.Error(w, r, http.StatusUnprocessableEntity, err)
 		}
 
-		c.responseHandler.Respond(w, r, http.StatusCreated, response.NewUserCreated(u))
+		c.responseHandler.Respond(w, r, http.StatusCreated, response.NewUser(u))
+	}
+}
+
+func (c *UserController) HandleWhoami() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		c.responseHandler.Respond(w, r, http.StatusOK, r.Context().Value(server.CtxKeyUser).(*response.User))
 	}
 }
 

@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"godmin/internal/model"
+	"godmin/internal/store"
 )
 
 type User struct {
@@ -30,6 +32,50 @@ func (ur *User) Create(u *model.User) error {
 		u.Email,
 		u.EncryptedPassword,
 	).Scan(&u.ID)
+}
+
+func (ur *User) Find(id uint64) (*model.User, error) {
+	u := &model.User{}
+
+	if err := ur.db.QueryRow(
+		"SELECT id, name, email, encrypted_password FROM users WHERE id = $1",
+		id,
+	).Scan(
+		&u.ID,
+		&u.Name,
+		&u.Email,
+		&u.EncryptedPassword,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, store.ErrRecordNotFound
+		}
+
+		return nil, err
+	}
+
+	return u, nil
+}
+
+func (ur *User) FindByEmail(email string) (*model.User, error) {
+	u := &model.User{}
+
+	if err := ur.db.QueryRow(
+		"SELECT id, name, email, encrypted_password FROM users WHERE email = $1",
+		email,
+	).Scan(
+		&u.ID,
+		&u.Name,
+		&u.Email,
+		&u.EncryptedPassword,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, store.ErrRecordNotFound
+		}
+
+		return nil, err
+	}
+
+	return u, nil
 }
 
 func (ur *User) EmailExists(u *model.User) (bool, error) {

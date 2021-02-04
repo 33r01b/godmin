@@ -4,7 +4,7 @@ import (
 	"context"
 	log "github.com/sirupsen/logrus"
 	"godmin/config"
-	"godmin/internal/server"
+	"godmin/internal/server/api"
 )
 
 func main() {
@@ -19,5 +19,5 @@ func init() {
 
 func run() error {
 	ctx := context.TODO()
-	return server.Run(ctx, config.NewConfig())
+	return api.Run(ctx, config.NewConfig())
 }
