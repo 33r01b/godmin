@@ -1,9 +1,11 @@
 # godmin
 
+RestApi admin panel
+
 ### TODO
 
-- api (RestApi, gRPC)
-- Auth (JWT)
+- Tests
 - CRUD
   - models
   - filters
+  - pagination
