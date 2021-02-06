@@ -8,7 +8,6 @@ import (
 	"godmin/config"
 	"godmin/internal/model"
 	"godmin/internal/server/request"
-	"godmin/internal/store/sqlstore"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -24,7 +23,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestController_Login(t *testing.T) {
+func TestServer_Login(t *testing.T) {
 	conf := config.NewConfig()
 
 	conn, err := NewConnections(conf)
@@ -32,22 +31,21 @@ func TestController_Login(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	store := sqlstore.New(conn.Db)
+	server := NewServer(conn, conf)
+
 	u := model.TestUser(t)
-	if err := store.User().Create(u); err != nil {
+	if err := server.SqlStore().User().Create(u); err != nil {
 		log.Fatal(err)
 	}
 
 	t.Cleanup(func() {
-		if err := store.User().Delete(u); err != nil {
+		if err := server.SqlStore().User().Delete(u); err != nil {
 			log.Fatal(err)
 		}
 		conn.Redis.FlushAll()
 
 		defer conn.Close()
 	})
-
-	server := NewServer(conn, conf)
 
 	r := request.Login{
 		Email:    u.Email,

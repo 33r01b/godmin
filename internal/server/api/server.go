@@ -36,24 +36,24 @@ func NewConnections(config *config.Config) (*Connections, error) {
 	return &Connections{
 		Db:    db,
 		Redis: memory,
-		Close: func() error {
-			if err := db.Close(); err != nil {
-				return err
-			}
-
-			if err := memory.Close(); err != nil {
-				return err
-			}
-
-			return nil
-		},
 	}, nil
 }
 
 type Connections struct {
 	Db    *sqlx.DB
 	Redis *redis.Client
-	Close func() error
+}
+
+func (c *Connections) Close() error {
+	if err := c.Db.Close(); err != nil {
+		return err
+	}
+
+	if err := c.Redis.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type Server struct {
@@ -65,6 +65,14 @@ type Server struct {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
+}
+
+func (s *Server) SqlStore() *sqlstore.Store {
+	return s.sqlStore
+}
+
+func (s *Server) MemoryStore() *memorystore.Store {
+	return s.memoryStore
 }
 
 func NewServer(conn *Connections, config *config.Config) *Server {
