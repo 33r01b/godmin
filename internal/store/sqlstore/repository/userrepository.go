@@ -92,6 +92,11 @@ func (ur *User) EmailExists(u *model.User) (bool, error) {
 	return count > 0, nil
 }
 
+func (ur *User) Delete(u *model.User) error {
+	_, err := ur.db.Exec("DELETE FROM users WHERE id = $1", u.ID)
+	return err
+}
+
 func NewUser(db *sqlx.DB) *User {
 	return &User{
 		db: db,

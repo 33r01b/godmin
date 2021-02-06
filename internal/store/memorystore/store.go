@@ -10,15 +10,10 @@ type Store struct {
 	tokenRepository *TokenRepository
 }
 
-func New(redisUrl string) (*Store, error) {
-	client, clientErr := newClient(redisUrl)
-	if clientErr != nil {
-		return nil, clientErr
-	}
-
+func New(client *redis.Client) *Store {
 	return &Store{
 		client: client,
-	}, nil
+	}
 }
 
 func (s *Store) Token() *TokenRepository {
@@ -33,7 +28,7 @@ func (s *Store) Token() *TokenRepository {
 	return s.tokenRepository
 }
 
-func newClient(memoryStoreUrl string) (*redis.Client, error) {
+func NewClient(memoryStoreUrl string) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr: memoryStoreUrl,
 	})

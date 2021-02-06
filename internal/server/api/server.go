@@ -2,8 +2,9 @@ package api
 
 import (
 	"context"
+	"github.com/go-redis/redis/v7"
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+	"github.com/jmoiron/sqlx"
 	"godmin/config"
 	"godmin/internal/server/service"
 	"godmin/internal/store/memorystore"
@@ -12,30 +13,52 @@ import (
 )
 
 func Run(context context.Context, config *config.Config) error {
-	log.SetLevel(config.LogLevel)
+	conn, err := NewConnections(config)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
+	return http.ListenAndServe(config.BindAddr, NewServer(conn, config))
+}
+
+func NewConnections(config *config.Config) (*Connections, error) {
 	db, err := sqlstore.NewDB(config.Database)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer db.Close()
 
-	store := sqlstore.New(db)
-	memoryStore, err := memorystore.New(config.RedisUrl)
+	memory, err := memorystore.NewClient(config.RedisUrl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	jwtService := service.NewJwtService(store, memoryStore, config.Jwt)
+	return &Connections{
+		Db:    db,
+		Redis: memory,
+		Close: func() error {
+			if err := db.Close(); err != nil {
+				return err
+			}
 
-	server := newServer(store, memoryStore, jwtService)
+			if err := memory.Close(); err != nil {
+				return err
+			}
 
-	return http.ListenAndServe(config.BindAddr, server)
+			return nil
+		},
+	}, nil
+}
+
+type Connections struct {
+	Db    *sqlx.DB
+	Redis *redis.Client
+	Close func() error
 }
 
 type Server struct {
 	router      *mux.Router
-	store       *sqlstore.Store
+	sqlStore    *sqlstore.Store
 	memoryStore *memorystore.Store
 	jwtService  *service.JWTService
 }
@@ -44,12 +67,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
-func newServer(store *sqlstore.Store, memoryStore *memorystore.Store, jwtService *service.JWTService) *Server {
+func NewServer(conn *Connections, config *config.Config) *Server {
+	sqlStore := sqlstore.New(conn.Db)
+	memoryStore := memorystore.New(conn.Redis)
+
 	s := &Server{
 		router:      mux.NewRouter(),
-		store:       store,
+		sqlStore:    sqlStore,
 		memoryStore: memoryStore,
-		jwtService:  jwtService,
+		jwtService:  service.NewJwtService(sqlStore, memoryStore, config.Jwt),
 	}
 
 	s.configureRouter()

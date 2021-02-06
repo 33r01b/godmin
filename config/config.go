@@ -20,6 +20,7 @@ func NewConfig() *Config {
 	if err != nil {
 		log.Fatal("Incorrect log level")
 	}
+	log.SetLevel(logLevel)
 
 	return &Config{
 		BindAddr: os.Getenv("BIND_ADDR"),

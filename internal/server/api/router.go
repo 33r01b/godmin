@@ -23,7 +23,7 @@ func (s *Server) configureRouter() {
 	s.router.HandleFunc("/", mainController.Handle()).Methods(http.MethodGet)
 
 	// users
-	userController := controller.NewUserController(responseHandler, s.store)
+	userController := controller.NewUserController(responseHandler, s.sqlStore)
 	user := s.router.PathPrefix("/users").Subrouter()
 	user.HandleFunc("/", userController.UserCreateHandle()).Methods(http.MethodPost)
 
