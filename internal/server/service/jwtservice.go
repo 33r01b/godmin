@@ -10,6 +10,7 @@ import (
 	"godmin/internal/dto"
 	"godmin/internal/model"
 	"godmin/internal/server/request"
+	"godmin/internal/server/response"
 	"godmin/internal/store/memorystore"
 	"godmin/internal/store/sqlstore"
 	"godmin/internal/throw"
@@ -38,7 +39,7 @@ func NewJwtService(store *sqlstore.Store, memoryStore *memorystore.Store, jwtCon
 	}
 }
 
-func (s *JWTService) CreateToken(l *request.Login) (map[string]string, *throw.ResponseError) {
+func (s *JWTService) CreateToken(l *request.Login) (*response.Token, *throw.ResponseError) {
 	u, err := s.store.User().FindByEmail(l.Email)
 	if err != nil || !u.ComparePassword(l.Password) {
 		return nil, throw.NewJWTError(http.StatusUnauthorized, errIncorrectEmailOrPassword)
@@ -55,12 +56,10 @@ func (s *JWTService) CreateToken(l *request.Login) (map[string]string, *throw.Re
 		return nil, throw.NewJWTError(http.StatusUnprocessableEntity, err)
 	}
 
-	tokens := map[string]string{
-		"access_token":  ts.AccessToken,
-		"refresh_token": ts.RefreshToken,
-	}
-
-	return tokens, nil
+	return &response.Token{
+		AccessToken:  ts.AccessToken,
+		RefreshToken: ts.RefreshToken,
+	}, nil
 }
 
 func (s *JWTService) RefreshToken(r *http.Request) (map[string]string, *throw.ResponseError) {

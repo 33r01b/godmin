@@ -21,13 +21,13 @@ func (c *AuthController) HandleLogin() func(http.ResponseWriter, *http.Request) 
 			return
 		}
 
-		tokens, err := c.jwtService.CreateToken(login)
+		token, err := c.jwtService.CreateToken(login)
 		if err != nil {
 			c.responseHandler.Error(w, r, err.GetStatusCode(), err.GetError())
 			return
 		}
 
-		c.responseHandler.Respond(w, r, http.StatusOK, tokens)
+		c.responseHandler.Respond(w, r, http.StatusOK, token)
 	}
 }
 

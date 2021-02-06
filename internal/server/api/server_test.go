@@ -8,6 +8,7 @@ import (
 	"godmin/config"
 	"godmin/internal/model"
 	"godmin/internal/server/request"
+	"godmin/internal/server/response"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -44,7 +45,7 @@ func TestServer_Login(t *testing.T) {
 		}
 		conn.Redis.FlushAll()
 
-		defer conn.Close()
+		conn.Close()
 	})
 
 	r := request.Login{
@@ -56,6 +57,7 @@ func TestServer_Login(t *testing.T) {
 		name         string
 		user         func() request.Login
 		expectedCode int
+		testBody     func(rec *httptest.ResponseRecorder)
 	}{
 		{
 			name: "logged",
@@ -63,6 +65,14 @@ func TestServer_Login(t *testing.T) {
 				return r
 			},
 			expectedCode: http.StatusOK,
+			testBody: func(rec *httptest.ResponseRecorder) {
+				token := &response.Token{}
+				if err := json.NewDecoder(rec.Body).Decode(token); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.NotEmpty(t, token)
+			},
 		},
 		{
 			name: "wrong password",
@@ -71,6 +81,15 @@ func TestServer_Login(t *testing.T) {
 				return r
 			},
 			expectedCode: http.StatusUnauthorized,
+			testBody: func(rec *httptest.ResponseRecorder) {
+				body := make(map[string]string)
+				if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.NotEmpty(t, body)
+				assert.Equal(t, "incorrect email or password", body["error"])
+			},
 		},
 	}
 
@@ -85,7 +104,9 @@ func TestServer_Login(t *testing.T) {
 
 			req, _ := http.NewRequest(http.MethodPost, "/login", b)
 			server.ServeHTTP(rec, req)
+
 			assert.Equal(t, tc.expectedCode, rec.Code)
+			tc.testBody(rec)
 		})
 	}
 }
