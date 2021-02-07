@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"godmin/config"
+	"godmin/internal/server/router"
 	"godmin/internal/server/service"
 	"godmin/internal/store/memorystore"
 	"godmin/internal/store/sqlstore"
@@ -67,12 +68,20 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
+func (s *Server) Router() *mux.Router {
+	return s.router
+}
+
 func (s *Server) SqlStore() *sqlstore.Store {
 	return s.sqlStore
 }
 
 func (s *Server) MemoryStore() *memorystore.Store {
 	return s.memoryStore
+}
+
+func (s *Server) JwtService() *service.JWTService {
+	return s.jwtService
 }
 
 func NewServer(conn *Connections, config *config.Config) *Server {
@@ -86,7 +95,7 @@ func NewServer(conn *Connections, config *config.Config) *Server {
 		jwtService:  service.NewJwtService(sqlStore, memoryStore, config.Jwt),
 	}
 
-	s.configureRouter()
+	router.Configure(s)
 
 	return s
 }

@@ -1,4 +1,4 @@
-package api
+package router
 
 import (
 	"context"
@@ -12,28 +12,28 @@ import (
 	"time"
 )
 
-func (s *Server) configureRouter() {
-	s.router.Use(setRequestID)
-	s.router.Use(logRequest)
+func Configure(s server.ServiceContainer) {
+	s.Router().Use(setRequestID)
+	s.Router().Use(logRequest)
 
 	responseHandler := response.NewResponse()
 
 	// main
 	mainController := controller.NewMainController(responseHandler)
-	s.router.HandleFunc("/", mainController.Handle()).Methods(http.MethodGet)
+	s.Router().HandleFunc("/", mainController.Handle()).Methods(http.MethodGet)
 
 	// users
-	userController := controller.NewUserController(responseHandler, s.sqlStore)
-	user := s.router.PathPrefix("/users").Subrouter()
+	userController := controller.NewUserController(responseHandler, s.SqlStore())
+	user := s.Router().PathPrefix("/users").Subrouter()
 	user.HandleFunc("/", userController.UserCreateHandle()).Methods(http.MethodPost)
 
 	// login
-	authController := controller.NewAuthController(s.jwtService, responseHandler)
-	s.router.HandleFunc("/login", authController.HandleLogin()).Methods(http.MethodPost)
+	authController := controller.NewAuthController(s.JwtService(), responseHandler)
+	s.Router().HandleFunc("/login", authController.HandleLogin()).Methods(http.MethodPost)
 
 	// admin
-	admin := s.router.PathPrefix("/admin").Subrouter()
-	jwtAuthMiddleware := middleware.NewJwtAuth(s.jwtService, responseHandler)
+	admin := s.Router().PathPrefix("/admin").Subrouter()
+	jwtAuthMiddleware := middleware.NewJwtAuth(s.JwtService(), responseHandler)
 	admin.Use(jwtAuthMiddleware.JwtAuthentication)
 	admin.HandleFunc("/logout", authController.HandleLogout()).Methods(http.MethodGet)
 	admin.HandleFunc("/whoami", userController.HandleWhoami()).Methods(http.MethodGet)
