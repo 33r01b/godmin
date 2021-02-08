@@ -20,7 +20,10 @@ jobs:
     
     - name: Run docker-compose
       run: docker-compose -f docker-compose.github.yml up -d
-         
+
+    - name: migrate
+      run: make migrate_test_up
+
     - name: Build
       run: go build -v ./...
 
