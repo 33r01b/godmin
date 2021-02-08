@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:12.1
+    container_name: godmin_db_test
+    restart: always
+    environment:
+      - POSTGRES_DB=godmin_db_test
+      - POSTGRES_USER=godmin
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./docker/postgres/init/:/docker-entrypoint-init.d/
+    ports:
+      - 7432:5432
+  redis:
+    image: redis:6.0.4
+    container_name: godmin_redis_test
+    restart: always
+    ports:
+      - 7379:6379
