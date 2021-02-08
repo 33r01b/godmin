@@ -67,7 +67,7 @@ func logRequest(next http.Handler) http.Handler {
 			"completed with %d %s in %v",
 			rw.Code,
 			http.StatusText(rw.Code),
-			time.Now().Sub(start),
+			time.Since(start),
 		)
 	})
 }

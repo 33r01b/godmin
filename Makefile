@@ -15,7 +15,7 @@ run:
 	./bin/godmin
 
 test: migrate_test_up
-	GODMIN_ENV=test && go test -v -race -timeout 30s ./...
+	docker build --network host -t 33r01b/godmin-test -f docker/go/testing/Dockerfile .
 
 migrate_create:
 	docker run -u ${UID}:${GID} -v ${PWD}/migrations:/migrations migrate/migrate \
