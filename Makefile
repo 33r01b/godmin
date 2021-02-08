@@ -6,10 +6,13 @@ GID=$$(id -g)
 all: build run
 
 build:
-	go build -o ./build/godmin -v ./cmd/main.go
+	go build -o ./bin/godmin -v ./cmd/godmin/main.go
+
+image:
+	docker build -t 33r01b/godmin -f docker/go/Dockerfile .
 
 run:
-	./build/godmin
+	./bin/godmin
 
 test: migrate_test_up
 	GODMIN_ENV=test && go test -v -race -timeout 30s ./...

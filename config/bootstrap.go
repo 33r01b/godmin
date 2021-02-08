@@ -12,7 +12,7 @@ const projectDirName = "godmin"
 func Bootstrap() {
 	env := os.Getenv("GODMIN_ENV")
 	if "" == env {
-		env = "development"
+		env = "dev"
 	}
 
 	re := regexp.MustCompile(`^(.*` + projectDirName + `)`)
