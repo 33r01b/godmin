@@ -13,16 +13,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.15.8
-    
     - name: Run docker-compose
       run: docker-compose -f docker-compose.yml up -d postgres_test redis_test
 
-    - name: Test
-      run: make test
+    - name: Migrate test DB
+      run: make migrate_test_up
+
+    - name: Build test
+      run: docker build -t 33r01b/godmin-test -f docker/go/testing/Dockerfile .
+
+    - name: Run test
+      run: docker run 33r01b/godmin-test
 
     - name: Build image
       run: make image
