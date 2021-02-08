@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"godmin/internal/server"
 	"godmin/internal/server/controller"
@@ -12,31 +13,34 @@ import (
 	"time"
 )
 
-func Configure(s server.ServiceContainer) {
-	s.Router().Use(setRequestID)
-	s.Router().Use(logRequest)
+func NewRouter(s server.ServiceContainer) *mux.Router {
+	router := mux.NewRouter()
+	router.Use(setRequestID)
+	router.Use(logRequest)
 
 	responseHandler := response.NewResponse()
 
 	// main
 	mainController := controller.NewMainController(responseHandler)
-	s.Router().HandleFunc("/", mainController.Handle()).Methods(http.MethodGet)
+	router.HandleFunc("/", mainController.Handle()).Methods(http.MethodGet)
 
 	// users
 	userController := controller.NewUserController(responseHandler, s.SqlStore())
-	user := s.Router().PathPrefix("/users").Subrouter()
+	user := router.PathPrefix("/users").Subrouter()
 	user.HandleFunc("/", userController.UserCreateHandle()).Methods(http.MethodPost)
 
 	// login
 	authController := controller.NewAuthController(s.JwtService(), responseHandler)
-	s.Router().HandleFunc("/login", authController.HandleLogin()).Methods(http.MethodPost)
+	router.HandleFunc("/login", authController.HandleLogin()).Methods(http.MethodPost)
 
 	// admin
-	admin := s.Router().PathPrefix("/admin").Subrouter()
+	admin := router.PathPrefix("/admin").Subrouter()
 	jwtAuthMiddleware := middleware.NewJwtAuth(s.JwtService(), responseHandler)
 	admin.Use(jwtAuthMiddleware.JwtAuthentication)
 	admin.HandleFunc("/logout", authController.HandleLogout()).Methods(http.MethodGet)
 	admin.HandleFunc("/whoami", userController.HandleWhoami()).Methods(http.MethodGet)
+
+	return router
 }
 
 func setRequestID(next http.Handler) http.Handler {

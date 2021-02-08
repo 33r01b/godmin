@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/gorilla/mux"
 	"godmin/internal/server/service"
 	"godmin/internal/store/memorystore"
 	"godmin/internal/store/sqlstore"
@@ -15,7 +14,6 @@ const (
 )
 
 type ServiceContainer interface {
-	Router() *mux.Router
 	SqlStore() *sqlstore.Store
 	MemoryStore() *memorystore.Store
 	JwtService() *service.JWTService

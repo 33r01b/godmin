@@ -32,15 +32,15 @@ func TestServer_Login(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	server := NewServer(conn, conf)
+	services := NewServices(conn, conf)
 
 	u := model.TestUser(t)
-	if err := server.SqlStore().User().Create(u); err != nil {
+	if err := services.SqlStore().User().Create(u); err != nil {
 		log.Fatal(err)
 	}
 
 	t.Cleanup(func() {
-		if err := server.SqlStore().User().Delete(u); err != nil {
+		if err := services.SqlStore().User().Delete(u); err != nil {
 			log.Fatal(err)
 		}
 		conn.Redis.FlushAll()
@@ -92,6 +92,8 @@ func TestServer_Login(t *testing.T) {
 			},
 		},
 	}
+
+	server := NewServer(services)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
