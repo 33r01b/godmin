@@ -2,7 +2,7 @@ package sqlstore
 
 import (
 	"fmt"
-	_ "github.com/jackc/pgx/stdlib"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"godmin/config"
