@@ -7,21 +7,17 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Run services
-        run: docker-compose -f docker-compose.yml up -d postgres_test redis_test
-
-      - name: Test
-        run: make test
 
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+
+    - name: Run services
+      run: docker-compose -f docker-compose.yml up -d postgres_test redis_test
+
+    - name: Test
+      run: make test
 
     - name: Set up Docker Buildx
       id: buildx
