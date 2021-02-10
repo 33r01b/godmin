@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	BindAddr string
+	Port     uint16
 	LogLevel log.Level
 	Database *Database
 	RedisUrl string
@@ -22,8 +22,13 @@ func NewConfig() *Config {
 	}
 	log.SetLevel(logLevel)
 
+	port, err := strconv.ParseInt(os.Getenv("PORT"), 10, 16)
+	if err != nil {
+		log.Fatal("Incorrect app port")
+	}
+
 	return &Config{
-		BindAddr: os.Getenv("BIND_ADDR"),
+		Port:     uint16(port),
 		LogLevel: logLevel,
 		Database: newDatabase(),
 		RedisUrl: os.Getenv("REDIS_URL"),

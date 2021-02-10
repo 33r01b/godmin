@@ -10,6 +10,7 @@ import (
 	"godmin/internal/store/memorystore"
 	"godmin/internal/store/sqlstore"
 	"net/http"
+	"strconv"
 )
 
 func Run(context context.Context, config *config.Config) error {
@@ -19,7 +20,7 @@ func Run(context context.Context, config *config.Config) error {
 	}
 	defer conn.Close()
 
-	return http.ListenAndServe(config.BindAddr, NewServer(NewServices(conn, config)))
+	return http.ListenAndServe(":"+strconv.Itoa(int(config.Port)), NewServer(NewServices(conn, config)))
 }
 
 func NewConnections(config *config.Config) (*Connections, error) {

@@ -8,4 +8,4 @@ RestApi admin panel
 - CRUD
   - models
   - filters
-  - pagination
+  - pagination (without counter)
