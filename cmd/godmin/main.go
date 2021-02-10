@@ -13,10 +13,6 @@ func main() {
 	}
 }
 
-func init() {
-	config.Bootstrap()
-}
-
 func run() error {
 	ctx := context.TODO()
 	return api.Run(ctx, config.NewConfig())

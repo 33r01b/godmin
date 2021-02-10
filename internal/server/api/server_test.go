@@ -16,11 +16,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if err := os.Setenv("GODMIN_ENV", "test"); err != nil {
-		os.Exit(1)
-	}
-
-	config.Bootstrap()
+	config.BootstrapTest()
 	os.Exit(m.Run())
 }
 

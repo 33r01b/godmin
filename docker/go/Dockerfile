@@ -26,6 +26,5 @@ COPY --from=builder /etc/passwd /etc/passwd
 USER godmin
 
 COPY --from=builder /godmin/bin/godmin /godmin
-COPY --from=builder /godmin/.env /.env
 
 CMD ["/godmin"]

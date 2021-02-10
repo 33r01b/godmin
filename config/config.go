@@ -1,102 +1,50 @@
 package config
 
 import (
+	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"strconv"
 	"time"
 )
 
 type Config struct {
-	Port     uint16
-	LogLevel log.Level
+	Port     uint16 `envconfig:"PORT" default:"8080" required:"true"`
+	LogLevel string `envconfig:"LOG_LEVEL" default:"debug" required:"true"`
+	RedisUrl string `envconfig:"REDIS_URL" default:"localhost:6379" required:"true"`
 	Database *Database
-	RedisUrl string
 	Jwt      *Jwt
 }
 
 func NewConfig() *Config {
-	logLevel, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
+	conf := &Config{}
+
+	err := envconfig.Process("", conf)
+	if err != nil {
+		log.Fatal("can't process the config: %w", err)
+	}
+
+	logLevel, err := log.ParseLevel(conf.LogLevel)
 	if err != nil {
 		log.Fatal("Incorrect log level")
 	}
 	log.SetLevel(logLevel)
 
-	port, err := strconv.ParseInt(os.Getenv("PORT"), 10, 16)
-	if err != nil {
-		log.Fatal("Incorrect app port")
-	}
-
-	return &Config{
-		Port:     uint16(port),
-		LogLevel: logLevel,
-		Database: newDatabase(),
-		RedisUrl: os.Getenv("REDIS_URL"),
-		Jwt:      newJwt(),
-	}
+	return conf
 }
 
 type Database struct {
-	Host            string
-	Port            uint16
-	Name            string
-	User            string
-	Password        string
-	SslMode         string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifeTime time.Duration
-	ConnMaxIdleTime time.Duration
-}
-
-func newDatabase() *Database {
-	port, err := strconv.ParseInt(os.Getenv("DATABASE_PORT"), 10, 16)
-	if err != nil {
-		log.Fatal("Incorrect database port")
-	}
-
-	maxOpenConns, err := strconv.ParseInt(os.Getenv("DATABASE_MAX_OPEN_CONNS"), 10, 32)
-	if err != nil {
-		log.Fatal("Incorrect database max open connections")
-	}
-
-	maxIdleConns, err := strconv.ParseInt(os.Getenv("DATABASE_MAX_IDLE_CONNS"), 10, 32)
-	if err != nil {
-		log.Fatal("Incorrect database max idle connections")
-	}
-
-	connMaxLifeTime, err := time.ParseDuration(os.Getenv("DATABASE_CONN_MAX_LIFE_TIME"))
-	if err != nil {
-		log.Fatal("Incorrect database connection max life time")
-	}
-
-	connMaxIdleTime, err := time.ParseDuration(os.Getenv("DATABASE_CONN_MAX_IDLE_TIME"))
-	if err != nil {
-		log.Fatal("Incorrect database connection max idle time")
-	}
-
-	return &Database{
-		Host:            os.Getenv("DATABASE_HOST"),
-		Port:            uint16(port),
-		Name:            os.Getenv("DATABASE_NAME"),
-		User:            os.Getenv("DATABASE_USER"),
-		Password:        os.Getenv("DATABASE_PASSWORD"),
-		SslMode:         os.Getenv("DATABASE_SSL_MODE"),
-		MaxOpenConns:    int(maxOpenConns),
-		MaxIdleConns:    int(maxIdleConns),
-		ConnMaxIdleTime: connMaxIdleTime,
-		ConnMaxLifeTime: connMaxLifeTime,
-	}
+	Host            string        `envconfig:"DATABASE_HOST" default:"localhost" required:"true"`
+	Port            uint16        `envconfig:"DATABASE_PORT" default:"5432" required:"true"`
+	Name            string        `envconfig:"DATABASE_NAME" default:"godmin_db_dev" required:"true"`
+	User            string        `envconfig:"DATABASE_USER" default:"godmin" required:"true"`
+	Password        string        `envconfig:"DATABASE_PASSWORD" default:"password" required:"true"`
+	SslMode         string        `envconfig:"DATABASE_SSL_MODE" default:"disable" required:"true"`
+	MaxOpenConns    int           `envconfig:"DATABASE_MAX_OPEN_CONNS" default:"1000" required:"true"`
+	MaxIdleConns    int           `envconfig:"DATABASE_MAX_IDLE_CONNS" default:"15" required:"true"`
+	ConnMaxLifeTime time.Duration `envconfig:"DATABASE_CONN_MAX_IDLE_TIME" default:"30s" required:"true"`
+	ConnMaxIdleTime time.Duration `envconfig:"DATABASE_CONN_MAX_LIFE_TIME" default:"0" required:"true"`
 }
 
 type Jwt struct {
-	AccessSecret  string
-	RefreshSecret string
-}
-
-func newJwt() *Jwt {
-	return &Jwt{
-		AccessSecret:  os.Getenv("JWT_ACCESS_SECRET"),
-		RefreshSecret: os.Getenv("JWT_REFRESH_SECRET"),
-	}
+	AccessSecret  string `envconfig:"JWT_ACCESS_SECRET" default:"secret;)" required:"true"`
+	RefreshSecret string `envconfig:"JWT_REFRESH_SECRET" default:"secret;)" required:"true"`
 }
