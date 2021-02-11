@@ -13,6 +13,7 @@ type JwtAuth struct {
 	responseHandler response.Handler
 }
 
+// JwtAuthentication verify authentication by JWT
 func (j *JwtAuth) JwtAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, err := j.jwtService.Authenticate(r)

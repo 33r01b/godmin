@@ -2,6 +2,7 @@ package api
 
 import (
 	"godmin/config"
+	"godmin/internal/server"
 	"godmin/internal/server/service"
 	"godmin/internal/store/memorystore"
 	"godmin/internal/store/sqlstore"
@@ -25,7 +26,7 @@ func (s *Services) JwtService() *service.JWTService {
 	return s.jwtService
 }
 
-func NewServices(conn *Connections, config *config.Config) *Services {
+func NewServices(conn *server.Connections, config *config.Config) *Services {
 	sqlStore := sqlstore.New(conn.Db)
 	memoryStore := memorystore.New(conn.Redis)
 

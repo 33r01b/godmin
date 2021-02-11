@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"godmin/config"
 	"godmin/internal/model"
+	"godmin/internal/server"
 	"godmin/internal/server/request"
 	"godmin/internal/server/response"
 	"net/http"
@@ -23,7 +24,7 @@ func TestMain(m *testing.M) {
 func TestServer_Login(t *testing.T) {
 	conf := config.NewConfig()
 
-	conn, err := NewConnections(conf)
+	conn, err := server.NewConnections(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,7 +90,7 @@ func TestServer_Login(t *testing.T) {
 		},
 	}
 
-	server := NewServer(services)
+	api := NewApi(conf, NewServices(conn, conf))
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -101,7 +102,7 @@ func TestServer_Login(t *testing.T) {
 			}
 
 			req, _ := http.NewRequest(http.MethodPost, "/login", b)
-			server.ServeHTTP(rec, req)
+			api.server.Handler.ServeHTTP(rec, req)
 
 			assert.Equal(t, tc.expectedCode, rec.Code)
 			tc.testBody(rec)

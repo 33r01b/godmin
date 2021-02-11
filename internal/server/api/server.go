@@ -2,71 +2,53 @@ package api
 
 import (
 	"context"
-	"github.com/go-redis/redis/v7"
-	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 	"godmin/config"
 	"godmin/internal/server/router"
-	"godmin/internal/store/memorystore"
-	"godmin/internal/store/sqlstore"
 	"net/http"
 	"strconv"
+	"time"
 )
 
-func Run(context context.Context, config *config.Config) error {
-	conn, err := NewConnections(config)
+type Api struct {
+	server *http.Server
+	errors chan error
+}
+
+func (a *Api) Run() {
+	go func() {
+		log.Info("run api server")
+		a.errors <- a.server.ListenAndServe()
+		close(a.errors)
+	}()
+}
+
+func (a *Api) Shutdown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := a.server.Shutdown(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
-	return http.ListenAndServe(":"+strconv.Itoa(int(config.Port)), NewServer(NewServices(conn, config)))
-}
-
-func NewConnections(config *config.Config) (*Connections, error) {
-	db, err := sqlstore.NewDB(config.Database)
-	if err != nil {
-		return nil, err
-	}
-
-	memory, err := memorystore.NewClient(config.RedisUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Connections{
-		Db:    db,
-		Redis: memory,
-	}, nil
-}
-
-type Connections struct {
-	Db    *sqlx.DB
-	Redis *redis.Client
-}
-
-func (c *Connections) Close() error {
-	if err := c.Db.Close(); err != nil {
-		return err
-	}
-
-	if err := c.Redis.Close(); err != nil {
-		return err
-	}
+	log.Info("api server stopped")
 
 	return nil
 }
 
-type Server struct {
-	router *mux.Router
+// Notify returns a channel to notify the caller about errors.
+// If you receive an error from the channel you should stop the application.
+func (a *Api) Notify() <-chan error {
+	return a.errors
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.router.ServeHTTP(w, r)
-}
-
-func NewServer(services *Services) *Server {
-	return &Server{
-		router: router.NewRouter(services),
+func NewApi(config *config.Config, services *Services) *Api {
+	return &Api{
+		server: &http.Server{
+			Addr:    ":" + strconv.Itoa(int(config.Port)),
+			Handler: router.NewRouter(services),
+		},
+		errors: make(chan error, 1),
 	}
 }
