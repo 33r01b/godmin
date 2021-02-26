@@ -1,13 +1,14 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"godmin/config"
 	"godmin/internal/server"
 	"godmin/internal/server/api"
 	"os"
 	"os/signal"
 	"syscall"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -21,12 +22,12 @@ func main() {
 	apiServer := api.NewApi(conf, api.NewServices(connections, conf))
 	apiServer.Run()
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
-	case x := <-interrupt:
-		log.Info("received a signal.", "signal", x.String())
+	case x := <-sigc:
+		log.Info("received a signal.", x.String())
 	case err := <-apiServer.Notify():
 		log.Error("received an error from the api server.", "err", err)
 	}
