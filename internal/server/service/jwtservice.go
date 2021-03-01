@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/google/uuid"
 	"godmin/config"
 	"godmin/internal/dto"
 	"godmin/internal/model"
@@ -18,6 +16,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 )
 
 var (
@@ -25,12 +26,14 @@ var (
 	errNotAuthenticated         = errors.New("not authenticated")
 )
 
+// JWTService is JWT authentication manager
 type JWTService struct {
 	store       *sqlstore.Store
 	memoryStore *memorystore.Store
 	config      *config.Jwt
 }
 
+// NewJwtService construct new JWTService
 func NewJwtService(store *sqlstore.Store, memoryStore *memorystore.Store, jwtConfig *config.Jwt) *JWTService {
 	return &JWTService{
 		store:       store,
@@ -39,29 +42,30 @@ func NewJwtService(store *sqlstore.Store, memoryStore *memorystore.Store, jwtCon
 	}
 }
 
+// CreateToken build new JWT
 func (s *JWTService) CreateToken(l *request.Login) (*response.Token, *throw.ResponseError) {
 	u, err := s.store.User().FindByEmail(l.Email)
 	if err != nil || !u.ComparePassword(l.Password) {
 		return nil, throw.NewJWTError(http.StatusUnauthorized, errIncorrectEmailOrPassword)
 	}
 
-	var ts *dto.Token
-	ts, err = s.createToken(u.ID)
+	token, err := s.createToken(u.ID)
 	if err != nil {
 		return nil, throw.NewJWTError(http.StatusUnprocessableEntity, err)
 	}
 
-	saveErr := s.memoryStore.Token().Create(u.ID, ts)
+	saveErr := s.memoryStore.Token().Create(u.ID, token)
 	if saveErr != nil {
 		return nil, throw.NewJWTError(http.StatusUnprocessableEntity, err)
 	}
 
 	return &response.Token{
-		AccessToken:  ts.AccessToken,
-		RefreshToken: ts.RefreshToken,
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
 	}, nil
 }
 
+// RefreshToken re-build JWT token
 func (s *JWTService) RefreshToken(r *http.Request) (map[string]string, *throw.ResponseError) {
 	req := &struct {
 		RefreshToken string `json:"refresh_token"`
@@ -89,11 +93,11 @@ func (s *JWTService) RefreshToken(r *http.Request) (map[string]string, *throw.Re
 	//Since token is valid, get the uuid:
 	claims, ok := token.Claims.(jwt.MapClaims) //the token claims should conform to MapClaims
 	if ok && token.Valid {
-		refreshUuid, ok := claims["refresh_uuid"].(string) //convert the interface to string
+		refreshUUID, ok := claims["refresh_uuid"].(string) //convert the interface to string
 		if !ok {
 			return nil, throw.NewJWTError(http.StatusUnprocessableEntity, err)
 		}
-		userId, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["user_id"]), 10, 64)
+		userID, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["user_id"]), 10, 64)
 		if err != nil {
 			return nil, throw.NewJWTError(http.StatusUnprocessableEntity, err)
 		}
@@ -105,17 +109,17 @@ func (s *JWTService) RefreshToken(r *http.Request) (map[string]string, *throw.Re
 		}
 
 		//Delete the previous Refresh Token
-		deleted, delErr := s.memoryStore.Token().Delete(refreshUuid)
+		deleted, delErr := s.memoryStore.Token().Delete(refreshUUID)
 		if delErr != nil || deleted == 0 { //if any goes wrong
 			return nil, throw.NewJWTError(http.StatusUnauthorized, errNotAuthenticated)
 		}
 		//Create new pairs of refresh and access tokens
-		ts, createErr := s.createToken(userId)
+		ts, createErr := s.createToken(userID)
 		if createErr != nil {
 			return nil, throw.NewJWTError(http.StatusUnprocessableEntity, createErr)
 		}
 		//save the tokens metadata to redis
-		saveErr := s.memoryStore.Token().Create(userId, ts)
+		saveErr := s.memoryStore.Token().Create(userID, ts)
 		if saveErr != nil {
 			return nil, throw.NewJWTError(http.StatusUnprocessableEntity, saveErr)
 		}
@@ -125,26 +129,27 @@ func (s *JWTService) RefreshToken(r *http.Request) (map[string]string, *throw.Re
 		}
 
 		return tokens, nil
-	} else {
-		return nil, throw.NewJWTError(http.StatusUnauthorized, errors.New("refresh expired"))
 	}
+
+	return nil, throw.NewJWTError(http.StatusUnauthorized, errors.New("refresh expired"))
 }
 
+// Authenticate user by JWT token
 func (s *JWTService) Authenticate(r *http.Request) (*model.User, *throw.ResponseError) {
 	tokenAuth, errToken := s.extractTokenMetadata(r)
 	if errToken != nil {
 		return nil, throw.NewJWTError(http.StatusUnauthorized, errNotAuthenticated)
 	}
 
-	userId, errUserId := s.memoryStore.Token().Find(tokenAuth.AccessUuid)
-	if errUserId != nil {
+	userID, errUserID := s.memoryStore.Token().Find(tokenAuth.AccessUUID)
+	if errUserID != nil {
 		return nil, throw.NewJWTError(http.StatusUnauthorized, errNotAuthenticated)
 	}
-	if userId != tokenAuth.UserId {
+	if userID != tokenAuth.UserID {
 		return nil, throw.NewJWTError(http.StatusUnauthorized, errNotAuthenticated)
 	}
 
-	u, errUser := s.store.User().Find(userId)
+	u, errUser := s.store.User().Find(userID)
 	if errUser != nil {
 		return nil, throw.NewJWTError(http.StatusUnauthorized, errNotAuthenticated)
 	}
@@ -152,6 +157,7 @@ func (s *JWTService) Authenticate(r *http.Request) (*model.User, *throw.Response
 	return u, nil
 }
 
+// Logout user
 func (s *JWTService) Logout(r *http.Request) *throw.ResponseError {
 	deleted, err := s.deleteToken(r)
 	if err != nil || deleted == 0 {
@@ -161,36 +167,43 @@ func (s *JWTService) Logout(r *http.Request) *throw.ResponseError {
 	return nil
 }
 
-func (s *JWTService) createToken(userId uint64) (*dto.Token, error) {
-	t := &dto.Token{}
-	t.AccessUuid = uuid.New().String()
-	t.RefreshUuid = uuid.New().String()
-	t.RefreshTokenExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
-	t.AccessTokenExpires = time.Now().Add(time.Minute * 15).Unix()
-
+func (s *JWTService) createToken(userID uint64) (*dto.Token, error) {
 	var err error
-	atClaims := jwt.MapClaims{}
-	atClaims["authorized"] = true
-	atClaims["access_uuid"] = t.AccessUuid
-	atClaims["user_id"] = userId
-	atClaims["exp"] = t.AccessTokenExpires
-	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	t.AccessToken, err = at.SignedString([]byte(s.config.AccessSecret))
+	token := &dto.Token{
+		AccessUuid:          uuid.New().String(),
+		RefreshUuid:         uuid.New().String(),
+		RefreshTokenExpires: time.Now().Add(time.Hour * 24 * 7).Unix(),
+		AccessTokenExpires:  time.Now().Add(time.Minute * 15).Unix(),
+	}
+
+	// generate access token
+	accessTokenClaims := jwt.MapClaims{
+		"authorized":  true,
+		"access_uuid": token.AccessUuid,
+		"user_id":     userID,
+		"exp":         token.AccessTokenExpires,
+	}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
+
+	token.AccessToken, err = accessToken.SignedString([]byte(s.config.AccessSecret))
 	if err != nil {
 		return nil, err
 	}
 
-	rtClaims := jwt.MapClaims{}
-	rtClaims["refresh_uuid"] = t.RefreshUuid
-	rtClaims["user_id"] = userId
-	rtClaims["exp"] = t.RefreshTokenExpires
-	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
-	t.RefreshToken, err = rt.SignedString([]byte(s.config.RefreshSecret))
+	// generate refresh token
+	refreshTokenClaims := jwt.MapClaims{
+		"refresh_uuid": token.RefreshUuid,
+		"user_id":      userID,
+		"exp":          token.RefreshTokenExpires,
+	}
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
+
+	token.RefreshToken, err = refreshToken.SignedString([]byte(s.config.RefreshSecret))
 	if err != nil {
 		return nil, err
 	}
 
-	return t, nil
+	return token, nil
 }
 
 func (s *JWTService) deleteToken(r *http.Request) (int64, error) {
@@ -200,7 +213,7 @@ func (s *JWTService) deleteToken(r *http.Request) (int64, error) {
 	}
 
 	var deleted int64
-	deleted, err = s.memoryStore.Token().Delete(tokenAuth.AccessUuid)
+	deleted, err = s.memoryStore.Token().Delete(tokenAuth.AccessUUID)
 	if err != nil || deleted == 0 {
 		return 0, err
 	}
@@ -208,24 +221,26 @@ func (s *JWTService) deleteToken(r *http.Request) (int64, error) {
 	return deleted, nil
 }
 
-func (s *JWTService) extractTokenMetadata(r *http.Request) (*AccessDetails, error) {
+func (s *JWTService) extractTokenMetadata(r *http.Request) (*accessDetails, error) {
 	token, err := s.verifyToken(r)
 	if err != nil {
 		return nil, err
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
-		accessUuid, ok := claims["access_uuid"].(string)
+		accessUUID, ok := claims["access_uuid"].(string)
 		if !ok {
 			return nil, err
 		}
-		userId, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["user_id"]), 10, 64)
+
+		userID, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["user_id"]), 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		return &AccessDetails{
-			AccessUuid: accessUuid,
-			UserId:     userId,
+
+		return &accessDetails{
+			AccessUUID: accessUUID,
+			UserID:     userID,
 		}, nil
 	}
 	return nil, err
@@ -238,11 +253,13 @@ func (s *JWTService) verifyToken(r *http.Request) (*jwt.Token, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
+
 		return []byte(s.config.AccessSecret), nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	return token, nil
 }
 
@@ -253,10 +270,11 @@ func extractToken(r *http.Request) string {
 	if len(strArr) == 2 {
 		return strArr[1]
 	}
+
 	return ""
 }
 
-type AccessDetails struct {
-	AccessUuid string
-	UserId     uint64
+type accessDetails struct {
+	AccessUUID string
+	UserID     uint64
 }
